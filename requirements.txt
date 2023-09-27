@@ -1,0 +1,7 @@
+easyocr==1.7.1
+opencv-python==4.8.0.76
+opencv-python-headless==4.8.0.76
+Pillow==10.0.0
+requests==2.31.0
+scenedetect==0.6.2
+tqdm==4.66.1
