@@ -1,7 +1,7 @@
 import easyocr
 from typing import *
 
-import config
+import .config
 
 
 class OCR:

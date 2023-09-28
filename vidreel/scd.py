@@ -2,7 +2,7 @@ import time
 from typing import *
 
 from scenedetect import detect, ContentDetector, ThresholdDetector, AdaptiveDetector
-import config
+import .config
 
 
 class SceneChangeDetection:

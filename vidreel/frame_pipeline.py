@@ -1,6 +1,6 @@
 from .frame_processor import FrameProcessor
 from .ocr import OCR
-from translator import Translator
+from .translator import Translator
 
 
 class FramePipeline:
