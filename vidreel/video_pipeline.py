@@ -2,9 +2,9 @@ import cv2
 from tqdm import tqdm
 from typing import *
 
-from frame_processor import FrameProcessor
-from ocr import OCR
-from translator import Translator
+from .frame_processor import FrameProcessor
+from .ocr import OCR
+from .translator import Translator
 
 
 class VideoPipeline:
