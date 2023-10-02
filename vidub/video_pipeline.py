@@ -77,7 +77,7 @@ class VideoPipeline:
         text_flag = False
         sc_ptr = 0
         frame_id = 1
-        with tqdm(total=2000) as pbar:
+        with tqdm(total=self.vid_len) as pbar:
             while True:
                 ret, frame = self.cap.read()
                 if not ret:
