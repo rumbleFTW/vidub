@@ -1,4 +1,5 @@
 import os
+import textwrap
 
 import cv2
 import numpy as np
@@ -49,22 +50,41 @@ class FrameProcessor:
         Returns:
             Image: Image with overlaid text.
         """
-        fontpath = "static/SakalBharati.ttf"
+        current_dir = os.path.dirname(__file__)
+        static = os.path.join(current_dir, "static")
+        fontpath = os.path.join(static, "SakalBharati.ttf")
         img_pil = Image.fromarray(frame)
         draw = ImageDraw.Draw(img_pil)
         for key in ocr_output.keys():
             bbox = ocr_output[key]["coord"]
             text = ocr_output[key]["translation"]
             (x1, y1), (x2, y2) = bbox[0], bbox[2]
-            font_size = int(y2 - y1)
-            font = ImageFont.truetype(font=fontpath, size=font_size - (font_size // 3))
-            draw.text(
+            lines = 1
+            while True:
+                size = (y2 - y1 - ((y2 - y1) / 3)) // lines
+                if draw.textlength(
+                    text=textwrap.wrap(
+                        text=text, width=(len(text) // lines), fix_sentence_endings=True
+                    )[0],
+                    font=ImageFont.truetype(font=fontpath, size=size),
+                ) > (x2 - x1):
+                    lines += 1
+                else:
+                    break
+
+            font = ImageFont.truetype(font=fontpath, size=size)
+            draw.multiline_text(
                 (x1, y1),
-                text,
+                "\n".join(
+                    textwrap.wrap(
+                        text, width=(len(text) // lines), break_long_words=False
+                    )
+                ),
                 font=font,
                 fill=config.text_color,
                 stroke_width=config.text_stroke_width,
                 stroke_fill=config.text_stroke_color,
+                align="center",
             )
         img = np.array(img_pil)
         return img

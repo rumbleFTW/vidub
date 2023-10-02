@@ -23,11 +23,10 @@ class OCR:
         Returns:
             Dict: Detected text and related information.
         """
-        response = self.reader.readtext(frame, paragraph=False)
+        response = self.reader.readtext(frame, paragraph=True)
         ocr_output = {}
         for detection in response:
             ocr_output[detection[1]] = {
                 "coord": detection[0],
             }
-            print(ocr_output)
         return ocr_output
