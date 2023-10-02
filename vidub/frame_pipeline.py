@@ -1,6 +1,6 @@
-from .frame_processor import FrameProcessor
-from .ocr import OCR
-from .translator import Translator
+from vidub.frame_processor import FrameProcessor
+from vidub.ocr import OCR
+from vidub.translator import Translator
 
 
 class FramePipeline:

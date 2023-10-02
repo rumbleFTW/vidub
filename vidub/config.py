@@ -5,7 +5,7 @@ scd_model_name = "ContentDetector"
 min_scene_len = 15
 
 # OCR parameters
-conf_threshold = 0.1
+conf_threshold = 0.0
 
 lang_id = "en"
 gpu = True

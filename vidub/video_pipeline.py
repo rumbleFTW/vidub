@@ -2,9 +2,9 @@ import cv2
 from tqdm import tqdm
 from typing import *
 
-from .frame_processor import FrameProcessor
-from .ocr import OCR
-from .translator import Translator
+from vidub.frame_processor import FrameProcessor
+from vidub.ocr import OCR
+from vidub.translator import Translator
 
 
 class VideoPipeline:
@@ -76,22 +76,31 @@ class VideoPipeline:
 
         text_flag = False
         sc_ptr = 0
-        for frame_id in tqdm(range(self.vid_len)):
-            curr_timestamp = video_timestamps[sc_ptr]
-            self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_id)
-            ret, frame = self.cap.read()
+        frame_id = 1
+        with tqdm(total=2000) as pbar:
+            while True:
+                ret, frame = self.cap.read()
+                if not ret:
+                    break
+                curr_timestamp = video_timestamps[sc_ptr]
+                self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_id)
+                ret, frame = self.cap.read()
 
-            if frame_id == curr_timestamp[0][1]:
-                det, frame = self.init_pipeline(frame)
-                text_flag = True
+                if frame_id == curr_timestamp[0][1]:
+                    det, frame = self.init_pipeline(frame)
+                    text_flag = True
 
-            elif frame_id == curr_timestamp[1][1] - 1:
-                det = {}
-                sc_ptr += 1
-                text_flag = False
+                elif frame_id == curr_timestamp[1][1] - 1:
+                    det = {}
+                    sc_ptr += 1
+                    text_flag = False
 
-            elif text_flag:
-                frame = self.continue_pipeline(det, frame)
-            self.out.write(frame)
+                elif text_flag:
+                    frame = self.continue_pipeline(det, frame)
+                self.out.write(frame)
+                frame_id += 1
+                pbar.update(1)
+                if frame_id > 2000:
+                    break
 
         self.release()

@@ -1,7 +1,7 @@
 import easyocr
 from typing import *
 
-import .config
+import vidub.config as config
 
 
 class OCR:
@@ -23,12 +23,11 @@ class OCR:
         Returns:
             Dict: Detected text and related information.
         """
-        response = self.reader.readtext(frame)
+        response = self.reader.readtext(frame, paragraph=False)
         ocr_output = {}
         for detection in response:
-            if detection[2] >= self.THRESH:
-                ocr_output[detection[1]] = {
-                    "coord": detection[0],
-                    "confidence": detection[2],
-                }
+            ocr_output[detection[1]] = {
+                "coord": detection[0],
+            }
+            print(ocr_output)
         return ocr_output

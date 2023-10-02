@@ -1,8 +1,10 @@
+import os
+
 import cv2
 import numpy as np
 from PIL import ImageFont, ImageDraw, Image
 
-import .config
+import vidub.config as config
 
 
 class FrameProcessor:
@@ -47,7 +49,7 @@ class FrameProcessor:
         Returns:
             Image: Image with overlaid text.
         """
-        fontpath = config.fontpath
+        fontpath = "static/SakalBharati.ttf"
         img_pil = Image.fromarray(frame)
         draw = ImageDraw.Draw(img_pil)
         for key in ocr_output.keys():
@@ -55,7 +57,7 @@ class FrameProcessor:
             text = ocr_output[key]["translation"]
             (x1, y1), (x2, y2) = bbox[0], bbox[2]
             font_size = int(y2 - y1)
-            font = ImageFont.truetype(fontpath, font_size - (font_size // 3))
+            font = ImageFont.truetype(font=fontpath, size=font_size - (font_size // 3))
             draw.text(
                 (x1, y1),
                 text,
