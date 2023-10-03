@@ -100,7 +100,5 @@ class VideoPipeline:
                 self.out.write(frame)
                 frame_id += 1
                 pbar.update(1)
-                if frame_id > 2000:
-                    break
 
         self.release()
