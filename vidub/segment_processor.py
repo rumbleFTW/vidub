@@ -19,7 +19,6 @@ class SegmentProcessor:
         lang_id: str = "en",
         gpu: bool = True,
     ):
-        print("Initializing...")
         self.texts = {}
         self.reader = easyocr.Reader([lang_id], gpu=gpu)
         current_dir = os.path.dirname(__file__)
@@ -41,12 +40,20 @@ class SegmentProcessor:
                 int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
             ),
         )
-        print("Done...")
 
-    def inpaint(self):
+    def inpaint(self, frame):
         for key in self.texts.keys():
             bbox = self.texts[key]["coord"]
-            self.texts[key]["point"] = np.array(bbox).reshape(-1, 2).astype(np.int32)
+            points = np.array(bbox).reshape(-1, 2).astype(np.int32)
+            cv2.fillPoly(frame, [points], (0, 0, 0))
+
+        inpainted_frame = cv2.inpaint(
+            frame,
+            (frame == 0).all(axis=2).astype(np.uint8),
+            inpaintRadius=3,
+            flags=cv2.INPAINT_TELEA,
+        )
+        return inpainted_frame
 
     def text_overlay(self, frame):
         img_pil = Image.fromarray(frame)
@@ -67,8 +74,23 @@ class SegmentProcessor:
                     lines += 1
                 else:
                     break
-            self.texts[key]["lines"] = lines
-            self.texts[key]["font_size"] = size
+
+            font = ImageFont.truetype(font=self.fontpath, size=size)
+            draw.multiline_text(
+                (x1, y1),
+                "\n".join(
+                    textwrap.wrap(
+                        text, width=(len(text) // lines), break_long_words=False
+                    )
+                ),
+                font=font,
+                fill=(0, 0, 0),
+                stroke_width=2,
+                stroke_fill=(255, 255, 255),
+                align="center",
+            )
+        img = np.array(img_pil)
+        return img
 
     def translate_batch(self, text_batch, source_lang: str, target_lang: str):
         url = "https://v2.fourie.ai/api/translatetext/batch"
@@ -119,47 +141,11 @@ class SegmentProcessor:
                     i
                 ]
         print("Inpainting frames...")
-        self.inpaint()
-        self.text_overlay(o_frame)
         for frame_id in tqdm(range(start_frame, end_frame + 1)):
             self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_id)
             ret, frame = self.cap.read()
-            for key in self.texts.keys():
-                cv2.fillPoly(frame, [self.texts[key]["point"]], (0, 0, 0))
-
-            inpainted_frame = cv2.inpaint(
-                frame,
-                (frame == 0).all(axis=2).astype(np.uint8),
-                inpaintRadius=3,
-                flags=cv2.INPAINT_TELEA,
-            )
-
-            img_pil = Image.fromarray(inpainted_frame)
-            draw = ImageDraw.Draw(img_pil)
-            for key in self.texts.keys():
-                text = self.texts[key]["translation"]
-                bbox = self.texts[key]["coord"]
-                (x1, y1), (x2, y2) = bbox[0], bbox[2]
-                font = ImageFont.truetype(
-                    font=self.fontpath, size=self.texts[key]["font_size"]
-                )
-                draw.multiline_text(
-                    (x1, y1),
-                    "\n".join(
-                        textwrap.wrap(
-                            text,
-                            width=(len(text) // self.texts[key]["lines"]),
-                            break_long_words=False,
-                        )
-                    ),
-                    font=font,
-                    fill=(0, 0, 0),
-                    stroke_width=2,
-                    stroke_fill=(255, 255, 255),
-                    align="center",
-                )
-
-            self.out.write(np.array(img_pil))
+            final_frame = self.text_overlay(self.inpaint(frame))
+            self.out.write(final_frame)
         self.release()
 
 
