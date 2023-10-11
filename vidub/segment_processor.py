@@ -1,4 +1,5 @@
 import os
+import json
 import textwrap
 import requests
 
@@ -19,7 +20,6 @@ class SegmentProcessor:
         lang_id: str = "en",
         gpu: bool = True,
     ):
-        print("Initializing...")
         self.texts = {}
         self.reader = easyocr.Reader([lang_id], gpu=gpu)
         current_dir = os.path.dirname(__file__)
@@ -41,7 +41,6 @@ class SegmentProcessor:
                 int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
             ),
         )
-        print("Done...")
 
     def inpaint(self):
         for key in self.texts.keys():
@@ -101,36 +100,41 @@ class SegmentProcessor:
             self.out.release()
 
     def __call__(self, ocr_frame, start_frame, end_frame, align="left") -> None:
-        print("Applying OCR...")
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, ocr_frame)
         ret, o_frame = self.cap.read()
         if not ret:
             raise Exception("Could not read `ocr_frame`")
-        self.texts = self.apply_ocr(o_frame)
-        if self.texts:
-            translations = self.translate_batch(
-                text_batch=list(self.texts.keys()),
-                source_lang=self.src_lang,
-                target_lang=self.target_lang,
-            )
+        # self.texts = self.apply_ocr(o_frame)
+        # if self.texts:
+        #     translations = self.translate_batch(
+        #         text_batch=list(self.texts.keys()),
+        #         source_lang=self.src_lang,
+        #         target_lang=self.target_lang,
+        #     )
 
-            for i, text in enumerate(self.texts.keys()):
-                self.texts[text]["translation"] = translations["translated_sentences"][
-                    i
-                ]
-        print("Inpainting frames...")
-        self.inpaint()
-        self.text_overlay(o_frame)
+        #     for i, text in enumerate(self.texts.keys()):
+        #         self.texts[text]["translation"] = translations["translated_sentences"][
+        #             i
+        #         ]
+        # # self.inpaint()
+        # self.text_overlay(o_frame)
+        # print(self.texts)
+        # # del self.texts["Skocd Berq]"]
+        # with open("./static/config3.json", "w") as json_file:
+        #     json.dump(self.texts, json_file, ensure_ascii=False, indent=4)
+        with open("./static/config3.json", "r") as json_file:
+            self.texts = json.load(json_file)
+        # self.texts["Brain"]["translation"] = "ಮೆದುಳು"
         for frame_id in tqdm(range(start_frame, end_frame + 1)):
             self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_id)
             ret, frame = self.cap.read()
             for key in self.texts.keys():
-                cv2.fillPoly(frame, [self.texts[key]["point"]], (0, 0, 0))
+                cv2.fillPoly(frame, [np.array(self.texts[key]["coord"])], (0, 0, 0))
 
             inpainted_frame = cv2.inpaint(
                 frame,
                 (frame == 0).all(axis=2).astype(np.uint8),
-                inpaintRadius=3,
+                inpaintRadius=4,
                 flags=cv2.INPAINT_TELEA,
             )
 
@@ -156,7 +160,7 @@ class SegmentProcessor:
                     fill=(0, 0, 0),
                     stroke_width=2,
                     stroke_fill=(255, 255, 255),
-                    align="center",
+                    align=align,
                 )
 
             self.out.write(np.array(img_pil))
@@ -165,9 +169,17 @@ class SegmentProcessor:
 
 if __name__ == "__main__":
     pipe = SegmentProcessor(
-        src_path="../data/video2.mp4",
-        dest_path="../data/dump.mp4",
+        src_path="../data/SkoolBeepSample1_en_kn.mp4",
+        dest_path=f"../data/SkoolBeep2/{2}-e.mp4",
         src_lang="english",
-        target_lang="bengali",
+        target_lang="kannada",
     )
-    pipe(ocr_frame=1799, start_frame=1735, end_frame=1850)
+    start_frame = 160
+    end_frame = 375
+    ocr_frame = 190
+    pipe(
+        ocr_frame=ocr_frame,
+        start_frame=start_frame,
+        end_frame=end_frame,
+        align="center",
+    )
